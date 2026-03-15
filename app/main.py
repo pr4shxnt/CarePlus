@@ -56,6 +56,10 @@ async def chat_endpoint(request: Request, db: Session = Depends(db.get_db)):
         else:
             response_content = "You don't have any medicines listed yet."
 
+    # Check for Mood Summary Intent
+    if not response_content and any(kw in user_message.lower() for kw in ["mood", "how have i been", "emotional", "feeling"]):
+        response_content = mood_service.get_mood_summary(db)
+
     # Check for Object Locator Intent (if not already handled)
     if not response_content:
         obj_intent = object_locator_service.parse_intent(user_message)
@@ -89,6 +93,11 @@ async def chat_endpoint(request: Request, db: Session = Depends(db.get_db)):
             chat_messages[-1]["content"] = prompt
             
         response_content = llm_service.chat(chat_messages, system_prompt=system_prompt)
+
+    # 5. Check for Distress Nudge
+    nudge = mood_service.check_for_distress(db)
+    if nudge:
+        response_content += f"\n\n---\n{nudge}"
 
     # Save assistant response
     db_assistant_message = models.Message(role="assistant", content=response_content)
