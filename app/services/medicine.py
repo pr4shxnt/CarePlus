@@ -3,6 +3,9 @@ from ..database import models
 from sqlalchemy.orm import Session
 import json
 import re
+import os
+
+MEDICINE_FILE = "data/medicines.txt"
 
 class MedicineService:
     def parse_medicine_intent(self, text):
@@ -15,18 +18,21 @@ class MedicineService:
         - frequency: frequency (if adding)
         - timing: timing (if adding)
         
-        If the user is asking about their medicines, action should be "query".
+        Rules:
+        1. Only return "add" if the user explicitly mentions adding, taking, or starting a new medicine.
+        2. If the user is asking about their mood, feelings, or history of emotions, return "none".
+        3. Only return "query" if the user asks list, show, or check their medicines.
+
         Example: "Add Metformin 500mg twice a day after meals" 
         -> {{"action": "add", "name": "Metformin", "dosage": "500mg", "frequency": "twice a day", "timing": "after meals"}}
         
-        Example: "What medicines should I take?" 
-        -> {{"action": "query"}}
+        Example: "how have i been feeling" 
+        -> {{"action": "none"}}
         
         Only return the JSON.
         """
         response = llm_service.generate_response(prompt)
         try:
-            # Simple clean up of response to get JSON
             match = re.search(r'\{.*\}', response, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
@@ -36,19 +42,16 @@ class MedicineService:
         except:
             return {"action": "none"}
 
-    def add_medicine(self, db: Session, data):
-        new_med = models.Medicine(
-            name=data.get("name"),
-            dosage=data.get("dosage"),
-            frequency=data.get("frequency"),
-            timing=data.get("timing")
-        )
-        db.add(new_med)
-        db.commit()
-        db.refresh(new_med)
-        return new_med
+    def add_medicine(self, data):
+        line = f"Name: {data.get('name', 'N/A')}, Dosage: {data.get('dosage', 'N/A')}, Frequency: {data.get('frequency', 'N/A')}, Timing: {data.get('timing', 'N/A')}\n"
+        with open(MEDICINE_FILE, "a") as f:
+            f.write(line)
+        return data
 
-    def list_medicines(self, db: Session):
-        return db.query(models.Medicine).filter(models.Medicine.is_active == 1).all()
+    def list_medicines(self):
+        if not os.path.exists(MEDICINE_FILE):
+            return []
+        with open(MEDICINE_FILE, "r") as f:
+            return f.readlines()
 
 medicine_service = MedicineService()

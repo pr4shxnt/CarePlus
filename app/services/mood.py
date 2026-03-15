@@ -32,17 +32,17 @@ class MoodService:
         ).count()
         
         if distressed_count >= 3:
-            return "नमस्ते, मैले याद गरेँ कि तपाईं आज अलि चिन्तित हुनुहुन्छ। कृपया आफ्नो ख्याल राख्नुहोला र आवश्यक परेमा कसैसँग कुरा गर्नुहोस्। (I noticed you might be feeling distressed today. Please take care of yourself and talk to someone if needed.)"
+            return "I noticed you've been feeling distressed today. Please take care of yourself and talk to someone if you need support."
         return None
 
     def get_mood_summary(self, db: Session):
         # Implementation for summarizing mood over time
-        recent_moods = db.query(models.MoodLog).order_by(models.MoodLog.timestamp.desc()).limit(10).all()
+        recent_moods = db.query(models.MoodLog).order_by(models.MoodLog.timestamp.desc()).limit(15).all()
         if not recent_moods:
-            return "No mood data available yet."
+            return "You haven't shared much yet, but I'm here to listen."
         
         sentiments = [m.sentiment for m in recent_moods]
-        summary_prompt = f"The user's recent sentiments are: {', '.join(sentiments)}. Summarize their emotional trend briefly."
+        summary_prompt = f"The user's recent sentiments are: {', '.join(sentiments)}. Summarize their emotional trend briefly in English."
         return llm_service.generate_response(summary_prompt)
 
 mood_service = MoodService()
