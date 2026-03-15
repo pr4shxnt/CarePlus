@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from .database import db, models
 from .services.llm import llm_service
+from .services.rag import rag_service
 import os
 
 # Create tables
@@ -32,14 +33,25 @@ async def chat_endpoint(request: Request, db: Session = Depends(db.get_db)):
     db.add(db_message)
     db.commit()
 
-    # Simple intent routing (for now just pass to LLM)
-    system_prompt = "You are Swastha Sathi, a health companion for Nepal. Answer health questions grounded in local knowledge. Use Nepali or English as requested. Always include a disclaimer that you are not a doctor."
+    # RAG Retrieval
+    relevant_chunks = rag_service.retrieve(user_message)
+    context = "\n\n".join([c["content"] for c in relevant_chunks])
     
+    if context:
+        prompt = f"Context from health knowledge base:\n{context}\n\nUser Question: {user_message}\n\nAnswer the question based ONLY on the context provided above. If the context doesn't contain the answer, say you don't know based on available records. Always include a medical disclaimer."
+    else:
+        prompt = user_message
+
     # Get last 5 messages for context
     history = db.query(models.Message).order_by(models.Message.id.desc()).limit(6).all()
     history = history[::-1] # Reverse to get chronological order
     
     chat_messages = [{"role": m.role, "content": m.content} for m in history]
+    # Replace the last user message with the RAG-augmented prompt if context exists
+    if context:
+        chat_messages[-1]["content"] = prompt
+    
+    system_prompt = "You are Swastha Sathi, a health companion for Nepal. Use Nepali or English as requested. Always include a disclaimer that you are not a doctor and this is for information only."
     
     response_content = llm_service.chat(chat_messages, system_prompt=system_prompt)
     
