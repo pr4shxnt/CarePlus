@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swastha Sathi (स्वस्थ साथी)</title>
+</head>
+<body>
+    <h1>Swastha Sathi (स्वस्थ साथी)</h1>
+    <div id="chat-container" style="height: 400px; border: 1px solid #ccc; overflow-y: scroll; padding: 10px; margin-bottom: 10px;">
+        <!-- Messages will appear here -->
+    </div>
+    <div id="input-container">
+        <input type="text" id="user-input" placeholder="Type a message..." style="width: 80%;">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to UI
+            appendMessage('You', message);
+            userInput.value = '';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const data = await response.json();
+                appendMessage('Swastha Sathi', data.response);
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('Error', 'Could not connect to the server.');
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.innerHTML = `<strong>${sender}:</strong> <pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>`;
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
