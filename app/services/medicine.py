@@ -27,8 +27,12 @@ class MedicineService:
         response = llm_service.generate_response(prompt)
         try:
             # Simple clean up of response to get JSON
-            json_str = re.search(r'\{.*\}', response, re.DOTALL).group(0)
-            return json.loads(json_str)
+            match = re.search(r'\{.*\}', response, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
+                if "action" in data:
+                    return data
+            return {"action": "none"}
         except:
             return {"action": "none"}
 
