@@ -81,8 +81,13 @@ async def chat_endpoint(request: Request, db: Session = Depends(db.get_db)):
 
     # 4. Intent Routing (Detection only, no execution)
     
+    # Short-circuit basic greetings
+    greetings = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
+    if user_message.lower().strip() in greetings:
+        response_content = "Hello! How can I help you with your health or reminders today?"
+
     # Check for Mood Summary
-    if any(kw in user_message.lower() for kw in ["mood", "how have i been", "emotional", "feeling"]):
+    if not response_content and any(kw in user_message.lower() for kw in ["mood", "how have i been", "emotional", "feeling"]):
         response_content = mood_service.get_mood_summary(db)
 
     # Medicine Intent

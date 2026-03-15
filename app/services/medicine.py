@@ -22,9 +22,13 @@ class MedicineService:
         1. Only return "add" if the user explicitly mentions adding, taking, or starting a new medicine.
         2. If the user is asking about their mood, feelings, or history of emotions, return "none".
         3. Only return "query" if the user asks list, show, or check their medicines.
+        4. If the user is just saying hello, greeting you, or making small talk, return "none".
 
         Example: "Add Metformin 500mg twice a day after meals" 
         -> {{"action": "add", "name": "Metformin", "dosage": "500mg", "frequency": "twice a day", "timing": "after meals"}}
+        
+        Example: "hello" 
+        -> {{"action": "none"}}
         
         Example: "how have i been feeling" 
         -> {{"action": "none"}}

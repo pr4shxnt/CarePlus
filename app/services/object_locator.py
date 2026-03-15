@@ -18,12 +18,13 @@ class ObjectLocatorService:
         - location: location description (for 'save')
         
         Rules:
-        1. Only return "save" if the user is stating where they placed or kept an item.
+        1. Only return "save" if the user is explicitly stating where they placed or kept an object (must include an object and a location).
         2. Only return "find" if the user is asking "Where" or "Have you seen" an item.
-        3. If the user is asking about health, wounds, or feelings, return "none".
+        3. If the user is asking about health, wounds, feelings, greetings (hello/hi), or small talk, ALWAYS return "none".
 
         Example: "I put my keys on the table" -> {{"action": "save", "object": "keys", "location": "on the table"}}
         Example: "Where are my keys?" -> {{"action": "find", "object": "keys"}}
+        Example: "hello" -> {{"action": "none"}}
         Example: "how to treat a wound?" -> {{"action": "none"}}
         
         Only return the JSON.
