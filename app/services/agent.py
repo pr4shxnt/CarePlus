@@ -110,12 +110,98 @@ class SwasthaAgent:
             
             return f"माफ गर्नुहोस्, मसँग तपाईंको {obj_name} को कुनै रेकर्ड छैन।" if lang == "ne" else f"I don't have a record of your {obj_name}."
 
-        # --- OBJECT / MEDICINE SAVE (Confirmation Logic Trigger) ---
-        elif intent in ["OBJECT_SAVE", "MEDICINE_ADD"]:
-            if lang == "ne":
-                return f"के म यसलाई तपाईंको रेकर्डमा बचत गरुँ? (Should I save this to your records?)"
-            else:
-                return f"I've noted that. Should I save this update to your records?"
+        # --- OBJECT SAVE ---
+        elif intent == "OBJECT_SAVE":
+            # Extract object name and location from the message
+            extract_prompt = (
+                f"From this message, extract the object name and its location.\n"
+                f"Message: \"{message}\"\n"
+                f"Reply in EXACTLY this format:\n"
+                f"OBJECT: <object name>\n"
+                f"LOCATION: <location>\n"
+                f"Nothing else."
+            )
+            extraction = llm_service.generate_response(extract_prompt).strip()
+            
+            obj_name = ""
+            obj_location = ""
+            for line in extraction.split("\n"):
+                line = line.strip()
+                if line.upper().startswith("OBJECT:"):
+                    obj_name = line.split(":", 1)[1].strip()
+                elif line.upper().startswith("LOCATION:"):
+                    obj_location = line.split(":", 1)[1].strip()
+            
+            if not obj_name or not obj_location:
+                if lang == "ne":
+                    return "माफ गर्नुहोस्, म वस्तुको नाम वा स्थान बुझ्न सकिन। कृपया फेरि भन्नुहोस्।"
+                return "Sorry, I couldn't understand the object name or location. Could you rephrase?"
+            
+            try:
+                resp = requests.post(f"{BUN_API_URL}/objects", json={
+                    "userId": user_id,
+                    "objectName": obj_name,
+                    "location": obj_location
+                })
+                if resp.status_code == 201:
+                    if lang == "ne":
+                        return f"बचत भयो! तपाईंको **{obj_name}** **{obj_location}** मा रेकर्ड गरिएको छ।"
+                    return f"Saved! I've recorded that your **{obj_name}** is at **{obj_location}**."
+                else:
+                    return "Sorry, I couldn't save that right now. Please try again."
+            except:
+                return "Could not connect to the server to save the object."
+
+        # --- MEDICINE ADD ---
+        elif intent == "MEDICINE_ADD":
+            extract_prompt = (
+                f"From this message, extract the medicine details.\n"
+                f"Message: \"{message}\"\n"
+                f"Reply in EXACTLY this format:\n"
+                f"NAME: <medicine name>\n"
+                f"DOSAGE: <dosage like 500mg, 1 tablet, etc.>\n"
+                f"TIME: <time like 08:00 AM, morning, after lunch, etc.>\n"
+                f"Nothing else. If any field is unclear, write 'unknown'."
+            )
+            extraction = llm_service.generate_response(extract_prompt).strip()
+            
+            med_name = ""
+            med_dosage = ""
+            med_time = ""
+            for line in extraction.split("\n"):
+                line = line.strip()
+                if line.upper().startswith("NAME:"):
+                    med_name = line.split(":", 1)[1].strip()
+                elif line.upper().startswith("DOSAGE:"):
+                    med_dosage = line.split(":", 1)[1].strip()
+                elif line.upper().startswith("TIME:"):
+                    med_time = line.split(":", 1)[1].strip()
+            
+            if not med_name or med_name.lower() == "unknown":
+                if lang == "ne":
+                    return "माफ गर्नुहोस्, म औषधिको नाम बुझ्न सकिन। कृपया फेरि भन्नुहोस्।"
+                return "Sorry, I couldn't understand the medicine name. Could you rephrase?"
+            
+            if not med_dosage or med_dosage.lower() == "unknown":
+                med_dosage = "As prescribed"
+            if not med_time or med_time.lower() == "unknown":
+                med_time = "Morning"
+            
+            try:
+                resp = requests.post(f"{BUN_API_URL}/medicines", json={
+                    "userId": user_id,
+                    "name": med_name,
+                    "dosage": med_dosage,
+                    "schedule": [{"time": med_time, "status": "pending"}]
+                })
+                if resp.status_code == 201:
+                    if lang == "ne":
+                        return f"बचत भयो! **{med_name}** ({med_dosage}) — {med_time} मा खानुहोस् भनेर रेकर्ड गरिएको छ।"
+                    return f"Saved! I've added **{med_name}** ({med_dosage}) scheduled at **{med_time}**."
+                else:
+                    return "Sorry, I couldn't save that medicine right now. Please try again."
+            except:
+                return "Could not connect to the server to save the medicine."
 
         # --- GENERAL ---
         else:

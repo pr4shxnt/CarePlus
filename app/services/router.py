@@ -48,6 +48,29 @@ class RouterService:
         if any(kw in msg_lower for kw in health_keywords):
             return "HEALTH_QA"
 
+        # Keyword override: Object Save
+        object_save_keywords = [
+            "rakheko", "rakhyo", "rakhey", "rakhiyeko", "rakheko xu", "rakhxu",
+            "placed", "put", "kept", "left", "stored",
+            "राखेको", "राख्छु", "राखें"
+        ]
+        location_indicators = [
+            "ma", "मा", "in", "on", "at", "near", "beside", "under", "above",
+            "table", "drawer", "room", "kitchen", "bedroom", "shelf", "bag", "tebul"
+        ]
+        if any(kw in msg_lower for kw in object_save_keywords) and any(kw in msg_lower for kw in location_indicators):
+            return "OBJECT_SAVE"
+
+        # Keyword override: Medicine Add
+        medicine_add_keywords = [
+            "add medicine", "add my medicine", "save medicine",
+            "ausadhi thap", "dabaai thap", "medicine rakh",
+            "i take", "i need to take", "remind me to take",
+            "औषधि थप", "दबाई थप"
+        ]
+        if any(kw in msg_lower for kw in medicine_add_keywords):
+            return "MEDICINE_ADD"
+
         prompt = self.INTENT_PROMPT.format(message=message)
         label = llm_service.generate_response(prompt).strip().upper()
         
