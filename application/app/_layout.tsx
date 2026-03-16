@@ -6,7 +6,7 @@ import {
 } from "@react-navigation/native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -21,6 +21,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const notifListenerRef = useRef<any>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -35,6 +36,28 @@ function RootLayoutNav() {
       router.replace("/(tabs)");
     }
   }, [user, isLoading, segments]);
+
+  // Global notification tap listener — navigates to Medicines tab
+  useEffect(() => {
+    const { addNotificationResponseReceivedListener } =
+      require("expo-notifications");
+
+    notifListenerRef.current = addNotificationResponseReceivedListener(
+      (response: any) => {
+        const data = response?.notification?.request?.content?.data;
+        if (data?.medicineId) {
+          // Navigate to medicines tab when user taps the notification
+          router.push("/(tabs)/medicines");
+        }
+      },
+    );
+
+    return () => {
+      if (notifListenerRef.current) {
+        notifListenerRef.current.remove();
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return null; // Or a splash screen

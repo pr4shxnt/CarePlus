@@ -76,3 +76,20 @@ export const loginUser = async (req: LoginRequestWithUser, res: Response) => {
     res.status(500).json({ message: error });
   }
 };
+
+// Save or update an Expo push token for a user
+export const savePushToken = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { expoPushToken } = req.body;
+
+    if (!expoPushToken) {
+      return res.status(400).json({ message: "expoPushToken is required" });
+    }
+
+    await User.findByIdAndUpdate(userId, { expoPushToken });
+    res.status(200).json({ message: "Push token saved" });
+  } catch (error) {
+    res.status(500).json({ message: error });
+  }
+};

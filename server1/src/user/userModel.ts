@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema({
     enum: ["patient", "doctor"],
     default: "patient",
   },
+  expoPushToken: {
+    type: String,
+    default: null, // Set when user registers device, e.g. "ExponentPushToken[xxx]"
+  },
 });
 
 export const User = mongoose.model("User", userSchema);
+
